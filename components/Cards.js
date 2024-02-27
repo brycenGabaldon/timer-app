@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 
+import { FaBeer, FaRegWindowClose } from "react-icons/fa";
+
 const Cards = () => {
   const [tasks, setTasks] = useState([
     { id: "task1", name: "Timer 1", subtasks: [], timer: 0 },
@@ -169,7 +171,7 @@ const Cards = () => {
               className="absolute top-0 right-0"
               onClick={() => handleRemoveTask(task.id)}
             >
-              X
+              <FaRegWindowClose className="text-lg m-2" />
             </button>
             <div className="w-full flex flex-col justify-center min-w-[300px] min-h-[150px]  my-auto cursor-pointer rounded-lg">
               <span className="text-3xl text-black font-extrabold uppercase">
