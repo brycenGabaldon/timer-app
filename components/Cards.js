@@ -22,23 +22,20 @@ const Cards = () => {
   };
   // Modified useEffect to load tasks from localStorage
 
-  // Modified useEffect to include localStorageChange as a dependency
+  // Load tasks from localStorage or initialize with default
   useEffect(() => {
     const loadTasks = () => {
       const storedTasks = localStorage.getItem("tasks");
       if (storedTasks) {
         setTasks(JSON.parse(storedTasks));
       } else {
-        // Initialize with default tasks if none are found in localStorage
-        setTasks(
-          { id: "task1", name: "Timer 1", subtasks: [], timer: 0 },
-          { id: "task2", name: "Timer 2", subtasks: [], timer: 0 }
-        ); // Your default tasks initialization
+        setTasks([
+          // Default tasks initialization if needed
+        ]);
       }
     };
-
     loadTasks();
-  }, [localStorageChange]); // Include localStorageChange here
+  }, [localStorageChange]); // Depend on localStorageChange to trigger re-load
 
   function exportLocalStorage() {
     // Serialize the data
@@ -59,26 +56,40 @@ const Cards = () => {
     document.body.removeChild(a); // Remove the element after the download starts
   }
 
-  function importLocalStorage() {
-    const input = document.getElementById("fileInput");
-    input.addEventListener("change", function () {
-      const file = this.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          const data = JSON.parse(e.target.result);
-          for (const key in data) {
-            if (data.hasOwnProperty(key)) {
-              localStorage.setItem(key, data[key]);
-            }
-          }
-          setLocalStorageChange((prev) => prev + 1);
-          alert("LocalStorage data successfully imported!");
-        };
-        reader.readAsText(file);
+  // Import file and update localStorage
+  function importLocalStorage(fileInput) {
+    if (!fileInput) {
+      // Optionally handle the case where no file is provided
+      console.log("No file selected for import.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        for (const key in data) {
+          localStorage.setItem(key, JSON.stringify(data[key]));
+        }
+        // Update the state to trigger useEffect, only if import succeeds
+        setLocalStorageChange((prev) => prev + 1);
+        alert("LocalStorage data successfully imported!");
+      } catch (error) {
+        console.error("Failed to import file:", error);
+        // Optionally handle file read or JSON parsing errors
       }
-    });
+    };
+
+    reader.readAsText(fileInput); // Assuming fileInput is the file object
   }
+
+  // Function to handle file selection and trigger import
+  const handleFileImport = (event) => {
+    const file = event.target.files[0]; // Assuming single file selection
+    if (file) {
+      importLocalStorage(file);
+    }
+  };
 
   useEffect(() => {
     importLocalStorage();
@@ -295,7 +306,7 @@ const Cards = () => {
       >
         Save Time
       </button>
-      <input type="file" id="fileInput" />
+      <input type="file" onChange={handleFileImport} />
     </div>
   );
 };
