@@ -9,7 +9,7 @@ const Index = () => {
   });
 
   return (
-    <div className="place-items-center  place-content-center flex  gap-[100px] w-screen min-h-screen bg-gray-900">
+    <div className="place-items-center  place-content-center flex  gap-[100px] w-screen min-h-screen bg-gray-900 overflow-x-hidden p-[2vw]">
       <Cards activeTimer={activeTimer} setActiveTimer={setActiveTimer} />
     </div>
   );

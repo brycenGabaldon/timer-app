@@ -151,14 +151,16 @@ const Cards = () => {
     setTasks(updatedTasks);
   };
   return (
-    <div className="task-container capitalize  w-full min-h-screen h-full  flex-col place-content-center place-items-center gap-20 flex">
+    <div className="task-container capitalize  w-full min-h-screen h-full  flex-row flex-wrap place-content-center place-items-center gap-20 flex">
       {" "}
-      <div>
+      <div className="flex flex-row flex-wrap mx-auto items-center justify-center">
         {tasks.map((task) => (
           <div
             key={task.id}
-            className={`task-card bg-gray-700 relative shadow-xl ${
-              isTimerActive(task.id) ? "shadow-green-500" : "shadow-black"
+            className={`task-card  relative shadow-lg m-4 ${
+              isTimerActive(task.id)
+                ? "shadow-green-500/80 bg-green-300/60"
+                : "shadow-black bg-gray-700"
             } text-center p-4 my-4 min-h-[150px] h-full rounded-lg flex flex-col flex-wrap`}
             onClick={() => toggleTimer(task.id)}
           >
@@ -169,7 +171,7 @@ const Cards = () => {
             >
               X
             </button>
-            <div className="w-full flex flex-col justify-center min-w-[300px]  my-auto cursor-pointer rounded-lg">
+            <div className="w-full flex flex-col justify-center min-w-[300px] min-h-[150px]  my-auto cursor-pointer rounded-lg">
               <span className="text-3xl text-black font-extrabold uppercase">
                 {task.name}
               </span>{" "}
