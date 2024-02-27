@@ -50,7 +50,7 @@ const Cards = () => {
       }
     };
     loadTasks();
-  }, [localStorageChange]); // Depend on localStorageChange to trigger re-load
+  }, []); // Depend on localStorageChange to trigger re-load
 
   function exportLocalStorage() {
     // Serialize the data
@@ -313,9 +313,7 @@ const Cards = () => {
           onChange={(e) => setNewTaskName(e.target.value)}
           className=" text-black mx-4 rounded-md p-2 bg-gray-400"
         />
-        <button onClick={handleAddTask} className="mx-auto text-center">
-          Add Task
-        </button>
+        <button onClick={handleAddTask}>Add Task</button>
       </div>
       <button
         className="bg-gray-700 text-white font-bold p-4 rounded-lg shadow-lg shadow-black"
