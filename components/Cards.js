@@ -212,9 +212,20 @@ const Cards = () => {
                     type="text"
                     placeholder="Add new subtask"
                     value={newSubTaskName}
-                    onChange={(e) => setNewSubTaskName(e.target.value)}
+                    onChange={(e) => [
+                      e.stopPropagation(),
+                      setNewSubTaskName(e.target.value),
+                    ]}
+                    onClick={(e) => e.stopPropagation()}
                   />
-                  <button onClick={() => handleAddSubTask(task.id)}>Add</button>
+                  <button
+                    onClick={(e) => [
+                      e.stopPropagation(),
+                      handleAddSubTask(task.id),
+                    ]}
+                  >
+                    Add
+                  </button>
                 </div>
               </>
             )}
