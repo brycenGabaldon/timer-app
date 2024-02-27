@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 
 const Cards = () => {
   const [tasks, setTasks] = useState([
-    { id: "task1", name: "Vast", subtasks: [], timer: 0 },
-    { id: "task2", name: "Ahura", subtasks: [], timer: 0 },
+    { id: "task1", name: "Timer 1", subtasks: [], timer: 0 },
+    { id: "task2", name: "Timer 2", subtasks: [], timer: 0 },
   ]);
   const [newTaskName, setNewTaskName] = useState(""); // Step 1: New state for task name
 
