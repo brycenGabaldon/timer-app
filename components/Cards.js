@@ -163,7 +163,7 @@ const Cards = () => {
               isTimerActive(task.id)
                 ? "shadow-green-500/80 bg-green-300/60"
                 : "shadow-black bg-gray-700"
-            } text-center p-4 my-4 min-h-[150px] h-full rounded-lg flex flex-col flex-wrap`}
+            } text-center p-4 my-4 min-h-[150px] h-full rounded-lg `}
             onClick={() => toggleTimer(task.id)}
           >
             {" "}
@@ -173,13 +173,13 @@ const Cards = () => {
             >
               <FaRegWindowClose className="text-lg m-2" />
             </button>
-            <div className="w-full flex flex-col justify-center min-w-[300px] min-h-[150px]  my-auto cursor-pointer rounded-lg">
-              <span className="text-3xl text-black font-extrabold uppercase">
+            <div className="w-full flex flex-col justify-center px-10 float-left min-h-[150px] max-w-screen min-w-[250px]  my-auto cursor-pointer rounded-lg">
+              <span className="text-3xl text-black font-extrabold uppercase py-2">
                 {task.name}
               </span>{" "}
               <br /> {formatTime(task.timer)}
               <button
-                className=" h-full "
+                className=" h-full py-2 "
                 onClick={(e) => [
                   e.stopPropagation(),
                   toggleSubtasksView(task.id),
