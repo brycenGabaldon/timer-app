@@ -8,7 +8,7 @@ const Cards = () => {
     { id: "task2", name: "Timer 2", subtasks: [], timer: 0 },
   ]);
   const [newTaskName, setNewTaskName] = useState(""); // Step 1: New state for task name
-
+  const [localStorageChange, setLocalStorageChange] = useState(0);
   const [activeTimers, setActiveTimers] = useState({});
   const [newSubTaskName, setNewSubTaskName] = useState("");
   const [showSubtasksOf, setShowSubtasksOf] = useState(null);
@@ -21,6 +21,8 @@ const Cards = () => {
     }
   };
   // Modified useEffect to load tasks from localStorage
+
+  // Modified useEffect to include localStorageChange as a dependency
   useEffect(() => {
     const loadTasks = () => {
       const storedTasks = localStorage.getItem("tasks");
@@ -28,17 +30,58 @@ const Cards = () => {
         setTasks(JSON.parse(storedTasks));
       } else {
         // Initialize with default tasks if none are found in localStorage
-        setTasks([
+        setTasks(
           { id: "task1", name: "Timer 1", subtasks: [], timer: 0 },
-          { id: "task2", name: "Timer 2", subtasks: [], timer: 0 },
-        ]);
+          { id: "task2", name: "Timer 2", subtasks: [], timer: 0 }
+        ); // Your default tasks initialization
       }
     };
 
     loadTasks();
-  }, []);
+  }, [localStorageChange]); // Include localStorageChange here
+
+  function exportLocalStorage() {
+    // Serialize the data
+    const data = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      data[key] = localStorage.getItem(key);
+    }
+    const jsonString = JSON.stringify(data);
+
+    // Create a blob and trigger a download
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "tasks.json";
+    document.body.appendChild(a); // We need to append the element to the dom -> this is required for Firefox
+    a.click();
+    document.body.removeChild(a); // Remove the element after the download starts
+  }
+
+  function importLocalStorage() {
+    const input = document.getElementById("fileInput");
+    input.addEventListener("change", function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const data = JSON.parse(e.target.result);
+          for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+              localStorage.setItem(key, data[key]);
+            }
+          }
+          setLocalStorageChange((prev) => prev + 1);
+          alert("LocalStorage data successfully imported!");
+        };
+        reader.readAsText(file);
+      }
+    });
+  }
 
   useEffect(() => {
+    importLocalStorage();
     const interval = setInterval(() => {
       setTasks((currentTasks) =>
         currentTasks.map((task) => {
@@ -248,10 +291,11 @@ const Cards = () => {
       </div>
       <button
         className="bg-gray-700 text-white font-bold p-4 rounded-lg shadow-lg shadow-black"
-        onClick={saveTasksToFile}
+        onClick={() => [saveTasksToFile(), exportLocalStorage()]}
       >
         Save Time
       </button>
+      <input type="file" id="fileInput" />
     </div>
   );
 };
