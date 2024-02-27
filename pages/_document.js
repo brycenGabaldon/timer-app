@@ -12,11 +12,11 @@ export default function Document() {
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
         />
-        <meta name="apple-mobile-web-app-title" content="Your App Name" />
+        <meta name="apple-mobile-web-app-title" content="Brycens Timer App" />
         <link
           rel="apple-touch-icon"
           sizes="192x192"
-          href="/path/to/your-icon.png"
+          href="/47164000-small.png"
         />
         {/* More icons can be added for different resolutions */}
       </Head>
