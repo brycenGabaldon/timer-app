@@ -27,8 +27,23 @@ const Cards = () => {
     const loadTasks = () => {
       const storedTasks = localStorage.getItem("tasks");
       if (storedTasks) {
-        setTasks(JSON.parse(storedTasks));
+        try {
+          const parsedTasks = JSON.parse(storedTasks);
+          // Ensure parsedTasks is an array before setting it to state
+          if (Array.isArray(parsedTasks)) {
+            setTasks(parsedTasks);
+          } else {
+            // Default to an empty array if parsedTasks is not an array
+            console.error("Stored tasks are not in array format");
+            setTasks([]);
+          }
+        } catch (error) {
+          console.error("Error parsing tasks from localStorage:", error);
+          // Default to an empty array if parsing fails
+          setTasks([]);
+        }
       } else {
+        // Initialize with default tasks if none are found in localStorage
         setTasks([
           // Default tasks initialization if needed
         ]);
