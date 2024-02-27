@@ -1,16 +1,26 @@
 // pages/api/saveTasks.js
+import { MongoClient } from "mongodb";
 
-import fs from "fs";
-import path from "path";
-
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
-      // Assuming your Next.js project is structured to allow writing to a specific directory
-      const filePath = path.resolve("./public", "tasks.json");
-      fs.writeFileSync(filePath, JSON.stringify(req.body, null, 2), "utf-8");
+      // Connect to the database
+      const client = await MongoClient.connect(process.env.MONGO_URL);
+      const db = client.db(); // If your database has a specific name, pass it here
+
+      // Assuming your tasks are stored in a collection named "tasks"
+      const collection = db.collection("tasks");
+
+      // Update tasks in the database
+      // This example assumes you want to replace all tasks; modify as needed for your use case
+      await collection.deleteMany({}); // Be cautious with this operation
+      await collection.insertMany(req.body.tasks);
+
+      client.close();
+
       res.status(200).json({ message: "Tasks saved successfully" });
     } catch (error) {
+      console.error(error);
       res
         .status(500)
         .json({ message: "Error saving tasks", error: error.message });
