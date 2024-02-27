@@ -1,0 +1,25 @@
+[
+  {
+    "id": "task1",
+    "name": "Vast",
+    "subtasks": [
+      {
+        "id": "task1-1",
+        "name": "task",
+        "timer": 49
+      },
+      {
+        "id": "task1-2",
+        "name": "new task",
+        "timer": 1
+      }
+    ],
+    "timer": 63
+  },
+  {
+    "id": "task2",
+    "name": "Ahura",
+    "subtasks": [],
+    "timer": 16
+  }
+]
