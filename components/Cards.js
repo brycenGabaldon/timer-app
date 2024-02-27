@@ -3,15 +3,16 @@ import React, { useEffect, useState } from "react";
 import { FaBeer, FaRegWindowClose } from "react-icons/fa";
 
 const Cards = () => {
-  const [tasks, setTasks] = useState([
-    { id: "task1", name: "Timer 1", subtasks: [], timer: 0 },
-    { id: "task2", name: "Timer 2", subtasks: [], timer: 0 },
-  ]);
-  const [newTaskName, setNewTaskName] = useState(""); // Step 1: New state for task name
   const [localStorageChange, setLocalStorageChange] = useState(0);
+
+  const [download, setDownload] = useState(false);
+  const [tasks, setTasks] = useState([]);
+  const [newTaskName, setNewTaskName] = useState("");
   const [activeTimers, setActiveTimers] = useState({});
   const [newSubTaskName, setNewSubTaskName] = useState("");
   const [showSubtasksOf, setShowSubtasksOf] = useState(null);
+
+  // Function to save tasks to localStorage
   const saveTasksToFile = () => {
     try {
       localStorage.setItem("tasks", JSON.stringify(tasks));
@@ -20,9 +21,67 @@ const Cards = () => {
       console.error("Error saving tasks:", error);
     }
   };
-  // Modified useEffect to load tasks from localStorage
 
-  // Load tasks from localStorage or initialize with default
+  // Load tasks from localStorage on component mount
+  useEffect(() => {
+    const storedTasks = localStorage.getItem("tasks");
+    if (storedTasks) {
+      try {
+        const parsedTasks = JSON.parse(storedTasks);
+        if (Array.isArray(parsedTasks)) {
+          setTasks(parsedTasks);
+        } else {
+          console.error(
+            "Expected tasks to be an array but received:",
+            typeof parsedTasks
+          );
+          setTasks([]); // Fallback to an empty array
+        }
+      } catch (error) {
+        console.error("Error parsing tasks from localStorage:", error);
+        setTasks([]); // Fallback to an empty array if parsing fails
+      }
+    }
+  }, []);
+
+  const importLocalStorage = (file) => {
+    if (!(file instanceof File)) {
+      console.error("The provided argument is not a File object");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      try {
+        const data = JSON.parse(e.target.result);
+
+        // Assuming the tasks data is directly at the top level of the JSON structure.
+        if (data && data.tasks && Array.isArray(JSON.parse(data.tasks))) {
+          const tasks = JSON.parse(data.tasks);
+          setTasks(tasks);
+          localStorage.setItem("tasks", JSON.stringify(tasks));
+          console.log("Tasks imported successfully.");
+        } else {
+          console.error(
+            "Imported data does not contain tasks array or incorrect format."
+          );
+        }
+      } catch (error) {
+        console.error("Failed to import tasks:", error);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleFileImport = (event) => {
+    const file = event.target.files[0]; // Extracts the first file
+    if (file) {
+      importLocalStorage(file); // Passes the file to the import function
+    } else {
+      console.error("No file selected");
+    }
+  };
+
   useEffect(() => {
     const loadTasks = () => {
       const storedTasks = localStorage.getItem("tasks");
@@ -53,7 +112,7 @@ const Cards = () => {
     loadTasks();
   }, [localStorageChange]); // Depend on localStorageChange to trigger re-load
 
-  /*   function exportLocalStorage() {
+  function exportLocalStorage() {
     // Serialize the data
     const data = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -61,7 +120,7 @@ const Cards = () => {
       data[key] = localStorage.getItem(key);
     }
     const jsonString = JSON.stringify(data);
-
+    console.log(jsonString);
     // Create a blob and trigger a download
     const blob = new Blob([jsonString], { type: "application/json" });
     const a = document.createElement("a");
@@ -70,64 +129,9 @@ const Cards = () => {
     document.body.appendChild(a); // We need to append the element to the dom -> this is required for Firefox
     a.click();
     document.body.removeChild(a); // Remove the element after the download starts
-  } */
+  }
 
   // Import file and update localStorage
-    function importLocalStorage(fileInput) {
-    if (!fileInput) {
-      // Optionally handle the case where no file is provided
-      console.log("No file selected for import.");
-      return;
-    }
-  function saveTasksToLocalStorage(tasks) {
-    if (Array.isArray(tasks)) {
-      const tasksString = JSON.stringify(tasks);
-      localStorage.setItem("tasks", tasksString);
-    } else {
-      console.error("Tasks must be an array");
-    }
-  }
-  function loadTasksFromLocalStorage() {
-    const tasksString = localStorage.getItem("tasks");
-    try {
-      const tasks = JSON.parse(tasksString);
-      if (Array.isArray(tasks)) {
-        return tasks;
-      } else {
-        console.error("Loaded tasks are not an array");
-        return [];
-      }
-    } catch (e) {
-      console.error("Error parsing tasks from local storage:", e);
-      return [];
-    }
-
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      try {
-        const data = JSON.parse(e.target.result);
-        for (const key in data) {
-          localStorage.setItem(key, JSON.stringify(data[key]));
-        }
-        // Update the state to trigger useEffect, only if import succeeds
-        setLocalStorageChange((prev) => prev + 1);
-        alert("LocalStorage data successfully imported!");
-      } catch (error) {
-        console.error("Failed to import file:", error);
-        // Optionally handle file read or JSON parsing errors
-      }
-    };
-
-    reader.readAsText(fileInput); // Assuming fileInput is the file object
-  }
-
-  // Function to handle file selection and trigger import
-  const handleFileImport = (event) => {
-    const file = event.target.files[0]; // Assuming single file selection
-    if (file) {
-      importLocalStorage(file);
-    }
-  };
 
   useEffect(() => {
     importLocalStorage();
@@ -340,9 +344,13 @@ const Cards = () => {
       </div>
       <button
         className="bg-gray-700 text-white font-bold p-4 rounded-lg shadow-lg shadow-black"
-        onClick={() => [saveTasksToFile(), saveTasksToLocalStorage(tasks)]}
+        onClick={() => [
+          saveTasksToFile(),
+          setDownload(!download),
+          download && exportLocalStorage(),
+        ]}
       >
-        Save Time
+        {download ? "Download" : "Save Time"}
       </button>
       <input type="file" onChange={handleFileImport} />
     </div>
