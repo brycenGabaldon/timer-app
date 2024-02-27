@@ -19,9 +19,8 @@ export default function handler(req, res) {
   });
 } */
 import { MongoClient } from "mongodb";
-
-// Replace 'your_mongodb_connection_string' with your actual connection string.
-// Ideally, this should be stored in an environment variable.
+import dotenv from "dotenv";
+dotenv.config({ path: "./.env.local" });
 const uri = process.env.MONGO_URL;
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -34,20 +33,32 @@ export default async function handler(req, res) {
     const database = client.db("brycen"); // Replace with your database name
     const collection = database.collection("timers"); // Replace with your collection name
 
-    // Fetch all tasks. You might want to adjust this query based on your needs.
-    const tasks = await collection.find({}).toArray();
+    // Fetch all tasks.
+    let tasks = await collection.find({}).toArray();
+
+    // Check if any tasks exist, if not, insert default tasks and fetch again
+    if (tasks.length === 0) {
+      // Define your default tasks here
+      const defaultTasks = [
+        { name: "Default Task 1", subtasks: [], timer: 0 },
+        { name: "Default Task 2", subtasks: [], timer: 0 },
+      ];
+
+      // Insert default tasks into the collection
+      await collection.insertMany(defaultTasks);
+
+      // Fetch the tasks again, now it should include the default tasks
+      tasks = await collection.find({}).toArray();
+    }
 
     res.status(200).json(tasks);
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({
-        message: "Error connecting to the database",
-        error: err.message,
-      });
+    res.status(500).json({
+      message: "Error connecting to the database",
+      error: err.message,
+    });
   } finally {
-    // Ensures that the client will close when you finish/error
     await client.close();
   }
 }

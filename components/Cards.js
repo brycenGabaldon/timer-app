@@ -10,41 +10,32 @@ const Cards = () => {
   const [activeTimers, setActiveTimers] = useState({});
   const [newSubTaskName, setNewSubTaskName] = useState("");
   const [showSubtasksOf, setShowSubtasksOf] = useState(null);
-  const saveTasksToFile = async () => {
+  const saveTasksToFile = () => {
     try {
-      const response = await fetch("/api/saveTasks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(tasks),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to save tasks");
-      }
-      const result = await response.json();
-      console.log(result.message); // You can handle the success state here
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+      console.log("Tasks saved successfully");
     } catch (error) {
       console.error("Error saving tasks:", error);
     }
   };
+  // Modified useEffect to load tasks from localStorage
   useEffect(() => {
-    // Function to fetch tasks
-    const fetchTasks = async () => {
-      try {
-        const response = await fetch("/api/tasks");
-        if (!response.ok) {
-          throw new Error("Failed to fetch tasks");
-        }
-        const data = await response.json();
-        setTasks(data);
-      } catch (error) {
-        console.error("Error fetching tasks:", error);
+    const loadTasks = () => {
+      const storedTasks = localStorage.getItem("tasks");
+      if (storedTasks) {
+        setTasks(JSON.parse(storedTasks));
+      } else {
+        // Initialize with default tasks if none are found in localStorage
+        setTasks([
+          { id: "task1", name: "Timer 1", subtasks: [], timer: 0 },
+          { id: "task2", name: "Timer 2", subtasks: [], timer: 0 },
+        ]);
       }
     };
 
-    fetchTasks();
+    loadTasks();
   }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setTasks((currentTasks) =>
