@@ -33,9 +33,10 @@ const Cards = () => {
           if (Array.isArray(parsedTasks)) {
             setTasks(parsedTasks);
           } else {
-            // Default to an empty array if parsedTasks is not an array
             console.error("Stored tasks are not in array format");
-            setTasks([]);
+            setTasks([
+              // Default tasks initialization if needed
+            ]);
           }
         } catch (error) {
           console.error("Error parsing tasks from localStorage:", error);
@@ -50,9 +51,9 @@ const Cards = () => {
       }
     };
     loadTasks();
-  }, []); // Depend on localStorageChange to trigger re-load
+  }, [localStorageChange]); // Depend on localStorageChange to trigger re-load
 
-  function exportLocalStorage() {
+  /*   function exportLocalStorage() {
     // Serialize the data
     const data = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -69,14 +70,36 @@ const Cards = () => {
     document.body.appendChild(a); // We need to append the element to the dom -> this is required for Firefox
     a.click();
     document.body.removeChild(a); // Remove the element after the download starts
-  }
+  } */
 
   // Import file and update localStorage
-  function importLocalStorage(fileInput) {
+    function importLocalStorage(fileInput) {
     if (!fileInput) {
       // Optionally handle the case where no file is provided
       console.log("No file selected for import.");
       return;
+    }
+  function saveTasksToLocalStorage(tasks) {
+    if (Array.isArray(tasks)) {
+      const tasksString = JSON.stringify(tasks);
+      localStorage.setItem("tasks", tasksString);
+    } else {
+      console.error("Tasks must be an array");
+    }
+  }
+  function loadTasksFromLocalStorage() {
+    const tasksString = localStorage.getItem("tasks");
+    try {
+      const tasks = JSON.parse(tasksString);
+      if (Array.isArray(tasks)) {
+        return tasks;
+      } else {
+        console.error("Loaded tasks are not an array");
+        return [];
+      }
+    } catch (e) {
+      console.error("Error parsing tasks from local storage:", e);
+      return [];
     }
 
     const reader = new FileReader();
@@ -317,7 +340,7 @@ const Cards = () => {
       </div>
       <button
         className="bg-gray-700 text-white font-bold p-4 rounded-lg shadow-lg shadow-black"
-        onClick={() => [saveTasksToFile(), exportLocalStorage()]}
+        onClick={() => [saveTasksToFile(), saveTasksToLocalStorage(tasks)]}
       >
         Save Time
       </button>
