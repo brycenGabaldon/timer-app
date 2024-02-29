@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 
 import { FaBeer, FaRegWindowClose } from "react-icons/fa";
+import LogCard from "./LogCard";
 
-const Cards = () => {
+const Cards = ({ handleSetLogs, logs }) => {
   const [localStorageChange, setLocalStorageChange] = useState(0);
 
   const [download, setDownload] = useState(false);
@@ -11,6 +12,24 @@ const Cards = () => {
   const [activeTimers, setActiveTimers] = useState({});
   const [newSubTaskName, setNewSubTaskName] = useState("");
   const [showSubtasksOf, setShowSubtasksOf] = useState(null);
+
+  // Utility function to debounce any function call
+  const debounce = (func, delay) => {
+    let timerId;
+    return function (...args) {
+      if (timerId) {
+        clearTimeout(timerId);
+      }
+      timerId = setTimeout(() => {
+        func(...args);
+      }, delay);
+    };
+  };
+
+  // Debounce toggleTimer specifically for starting a timer
+  const debouncedStartTimer = debounce((id, isSubtask, parentTaskId) => {
+    toggleTimer(id, isSubtask, parentTaskId);
+  }, 250); // 250ms delay
 
   // Function to save tasks to localStorage
   const saveTasksToFile = () => {
@@ -156,40 +175,45 @@ const Cards = () => {
     return () => clearInterval(interval);
   }, [activeTimers]);
 
-  const toggleTimer = (id, isSubtask = false, parentTaskId = null) => {
+  // Example adjustment within Cards component
+
+  const [timerStatus, setTimerStatus] = useState({});
+
+  const toggleTimer = (name, id) => {
     setActiveTimers((prevActiveTimers) => {
+      const isTimerActive = !!prevActiveTimers[id];
       let updatedActiveTimers = { ...prevActiveTimers };
 
-      if (isSubtask) {
-        // Toggle subtask timer
-        if (prevActiveTimers[id]) {
-          delete updatedActiveTimers[id]; // Stop the timer if it's already running
-        } else {
-          updatedActiveTimers[id] = true; // Start the timer
-        }
+      if (isTimerActive) {
+        delete updatedActiveTimers[id]; // Stop the timer
+        // Log stopping with task/subtask name for clarity
+        handleSetLogs({
+          action: `Stopped timer for '${name}'`,
+          timestamp: new Date().toISOString(),
+        });
       } else {
-        // For parent tasks, stop all timers and toggle the clicked one
-        if (prevActiveTimers[id]) {
-          delete updatedActiveTimers[id]; // Stop the timer if it's already running
-        } else {
-          // Stop all timers first
-          updatedActiveTimers = Object.keys(prevActiveTimers).reduce(
-            (acc, timerId) => {
-              if (timerId.startsWith(id + "-")) {
-                // Keep subtask timers running
-                acc[timerId] = true;
-              }
-              return acc;
-            },
-            {}
-          );
-          updatedActiveTimers[id] = true; // Start the clicked timer
-        }
+        updatedActiveTimers[id] = true; // Start the timer
+        // Log starting with task/subtask name for clarity
+        handleSetLogs({
+          action: `Started timer for '${name}'`,
+          timestamp: new Date().toISOString(),
+        });
       }
 
       return updatedActiveTimers;
     });
   };
+
+  useEffect(() => {
+    if (timerStatus.id) {
+      const timestamp = new Date().toISOString();
+      handleSetLogs({
+        action: `${timerStatus.action} timer for task '${timerStatus.id}'`,
+        timestamp,
+      });
+    }
+  }, [timerStatus]);
+
   const handleAddTask = () => {
     // Prevent adding empty tasks
     if (!newTaskName.trim()) return;
@@ -249,9 +273,9 @@ const Cards = () => {
     setTasks(updatedTasks);
   };
   return (
-    <div className="task-container capitalize  w-full min-h-screen h-full  flex-row flex-wrap place-content-center place-items-center gap-20 flex">
+    <div className="task-container capitalize  w-full  h-full  flex-row flex-wrap place-content-center place-items-center gap-20 flex">
       {" "}
-      <div className="flex flex-row flex-wrap mx-auto items-center justify-center">
+      <div className="flex flex-row flex-wrap mx-auto items-center justify-center min-h-[200px] h-full">
         {tasks.map((task) => (
           <div
             key={task.id}
@@ -260,7 +284,7 @@ const Cards = () => {
                 ? "shadow-green-500/80 bg-green-300/60"
                 : "shadow-black bg-gray-700"
             } text-center p-4 my-4 min-h-[150px] h-full rounded-lg `}
-            onClick={() => toggleTimer(task.id)}
+            onClick={(e) => toggleTimer(task.name, task.id)}
           >
             {" "}
             <button
@@ -299,7 +323,8 @@ const Cards = () => {
                       className="bg-black text-white rounded-md"
                       onClick={(e) => [
                         e.stopPropagation(),
-                        toggleTimer(subtask.id, true, task.id, e),
+
+                        toggleTimer(subtask.name, subtask.id),
                       ]}
                     >
                       {activeTimers[subtask.id] ? "Stop" : "Start"}
@@ -331,6 +356,7 @@ const Cards = () => {
             )}
           </div>
         ))}
+        <LogCard logs={logs} />
       </div>{" "}
       <div className="add-task-form">
         <input
