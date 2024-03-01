@@ -10,6 +10,19 @@ const Index = () => {
   });
   const [logs, setLogs] = useState([]);
 
+  // Save logs to local storage
+  useEffect(() => {
+    localStorage.setItem("logs", JSON.stringify(logs));
+  }, [logs]);
+
+  // Load logs from local storage on component mount
+  useEffect(() => {
+    const storedLogs = localStorage.getItem("logs");
+    if (storedLogs) {
+      setLogs(JSON.parse(storedLogs));
+    }
+  }, []);
+
   const handleSetLogs = (newLog) => {
     setLogs((currentLogs) => {
       // Check if the newLog exactly exists
@@ -32,6 +45,7 @@ const Index = () => {
         setActiveTimer={setActiveTimer}
         handleSetLogs={handleSetLogs}
         logs={logs}
+        setLogs={setLogs}
       />
     </div>
   );

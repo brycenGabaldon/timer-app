@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { FaBeer, FaRegWindowClose } from "react-icons/fa";
 import LogCard from "./LogCard";
 
-const Cards = ({ handleSetLogs, logs }) => {
+const Cards = ({ handleSetLogs, logs, setLogs }) => {
   const [localStorageChange, setLocalStorageChange] = useState(0);
 
   const [download, setDownload] = useState(false);
@@ -31,19 +31,24 @@ const Cards = ({ handleSetLogs, logs }) => {
     toggleTimer(id, isSubtask, parentTaskId);
   }, 250); // 250ms delay
 
-  // Function to save tasks to localStorage
-  const saveTasksToFile = () => {
+  const saveDataToFile = () => {
     try {
       localStorage.setItem("tasks", JSON.stringify(tasks));
-      console.log("Tasks saved successfully");
+      localStorage.setItem("logs", JSON.stringify(logs));
+      localStorage.setItem(
+        "logsGroupedByTask",
+        JSON.stringify(logsGroupedByTask)
+      );
+      console.log("Data saved successfully");
     } catch (error) {
-      console.error("Error saving tasks:", error);
+      console.error("Error saving data:", error);
     }
   };
 
   // Load tasks from localStorage on component mount
   useEffect(() => {
     const storedTasks = localStorage.getItem("tasks");
+
     if (storedTasks) {
       try {
         const parsedTasks = JSON.parse(storedTasks);
@@ -65,7 +70,7 @@ const Cards = ({ handleSetLogs, logs }) => {
 
   const importLocalStorage = (file) => {
     if (!(file instanceof File)) {
-      console.error("The provided argument is not a File object");
+      console.error("No Readable File object");
       return;
     }
 
@@ -73,20 +78,37 @@ const Cards = ({ handleSetLogs, logs }) => {
     reader.onload = function (e) {
       try {
         const data = JSON.parse(e.target.result);
-
-        // Assuming the tasks data is directly at the top level of the JSON structure.
-        if (data && data.tasks && Array.isArray(JSON.parse(data.tasks))) {
-          const tasks = JSON.parse(data.tasks);
-          setTasks(tasks);
-          localStorage.setItem("tasks", JSON.stringify(tasks));
-          console.log("Tasks imported successfully.");
+        if (data) {
+          if (typeof data.tasks === "string") {
+            setTasks(JSON.parse(data.tasks));
+            localStorage.setItem("tasks", data.tasks);
+            console.log("Tasks imported successfully.");
+          } else {
+            console.warn("Imported tasks data is not a string.");
+          }
+          if (typeof data.logs === "string") {
+            setLogs(JSON.parse(data.logs));
+            localStorage.setItem("logs", data.logs);
+            console.log("Logs imported successfully.");
+          } else {
+            console.warn("Imported logs data is not a string.");
+          }
+          if (
+            data.logsGroupedByTask &&
+            typeof data.logsGroupedByTask === "string"
+          ) {
+            setLogsGroupedByTask(JSON.parse(data.logsGroupedByTask));
+            console.log("logsGroupedByTask imported successfully.");
+          } else {
+            console.warn(
+              "Imported data does not contain logsGroupedByTask or incorrect format."
+            );
+          }
         } else {
-          console.error(
-            "Imported data does not contain tasks array or incorrect format."
-          );
+          console.error("Imported data is empty or incorrect format.");
         }
       } catch (error) {
-        console.error("Failed to import tasks:", error);
+        console.error("Failed to import data:", error);
       }
     };
     reader.readAsText(file);
@@ -100,9 +122,12 @@ const Cards = ({ handleSetLogs, logs }) => {
       console.error("No file selected");
     }
   };
-
+  const [logsGroupedByTask, setLogsGroupedByTask] = useState({});
+  console.log("====================================");
+  console.log(logsGroupedByTask);
+  console.log("====================================");
   useEffect(() => {
-    const loadTasks = () => {
+    const loadDataFromLocalStorage = () => {
       const storedTasks = localStorage.getItem("tasks");
       if (storedTasks) {
         try {
@@ -112,24 +137,62 @@ const Cards = ({ handleSetLogs, logs }) => {
             setTasks(parsedTasks);
           } else {
             console.error("Stored tasks are not in array format");
-            setTasks([
-              // Default tasks initialization if needed
-            ]);
+            setTasks([]);
           }
         } catch (error) {
           console.error("Error parsing tasks from localStorage:", error);
-          // Default to an empty array if parsing fails
           setTasks([]);
         }
       } else {
         // Initialize with default tasks if none are found in localStorage
-        setTasks([
-          // Default tasks initialization if needed
-        ]);
+        setTasks([]);
+      }
+
+      const storedLogs = localStorage.getItem("logs");
+      if (storedLogs) {
+        try {
+          const parsedLogs = JSON.parse(storedLogs);
+          setLogs(parsedLogs);
+        } catch (error) {
+          console.error("Error parsing logs from localStorage:", error);
+          setLogs([]);
+        }
+      } else {
+        setLogs([]);
+      }
+
+      const storedLogsGroupedByTask = localStorage.getItem("logsGroupedByTask");
+      if (storedLogsGroupedByTask) {
+        const parsedLogsGroupedByTask = JSON.parse(storedLogsGroupedByTask);
+        // Now parsedLogsGroupedByTask will be an object
+        setLogsGroupedByTask(parsedLogsGroupedByTask);
+      } else {
+        setLogsGroupedByTask({});
       }
     };
-    loadTasks();
-  }, [localStorageChange]); // Depend on localStorageChange to trigger re-load
+
+    loadDataFromLocalStorage();
+  }, []);
+
+  function exportLocalStorage() {
+    // Serialize the data
+    const data = {
+      tasks: localStorage.getItem("tasks"),
+      logs: localStorage.getItem("logs"),
+      logsGroupedByTask: localStorage.getItem("logsGroupedByTask"),
+    };
+
+    const jsonString = JSON.stringify(data);
+
+    // Create a blob and trigger a download
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "data.json";
+    document.body.appendChild(a); // Append the element to the DOM (required for Firefox)
+    a.click();
+    document.body.removeChild(a); // Remove the element after the download starts
+  }
 
   function exportLocalStorage() {
     // Serialize the data
@@ -359,7 +422,13 @@ const Cards = ({ handleSetLogs, logs }) => {
             )}
           </div>
         ))}
-        <LogCard logs={logs} handleSetLogs={handleSetLogs} />
+        <LogCard
+          logs={logs}
+          setLogs={setLogs}
+          handleSetLogs={handleSetLogs}
+          logsGroupedByTask={logsGroupedByTask}
+          setLogsGroupedByTask={setLogsGroupedByTask}
+        />
       </div>{" "}
       <div className="add-task-form">
         <input
@@ -373,11 +442,13 @@ const Cards = ({ handleSetLogs, logs }) => {
       </div>
       <button
         className="bg-gray-700 text-white font-bold p-4 rounded-lg shadow-lg shadow-black"
-        onClick={() => [
-          saveTasksToFile(),
-          setDownload(!download),
-          download && exportLocalStorage(),
-        ]}
+        onClick={() => {
+          saveDataToFile();
+          setDownload(!download);
+          if (download) {
+            exportLocalStorage();
+          }
+        }}
       >
         {download ? "Download" : "Save Time"}
       </button>

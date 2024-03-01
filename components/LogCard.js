@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-const LogCard = ({ logs }) => {
+const LogCard = ({ logs, setLogsGroupedByTask, logsGroupedByTask }) => {
   const [active, setActive] = useState(false);
 
   const [processedDurations, setProcessedDurations] = useState([]);
@@ -71,7 +71,26 @@ const LogCard = ({ logs }) => {
   }, [logs]);
   const [sortOption, setSortOption] = useState("time"); // "time" or "task"
   const [logsSortedByTime, setLogsSortedByTime] = useState([]);
-  const [logsGroupedByTask, setLogsGroupedByTask] = useState({});
+
+  // Save logsGroupedByTask to local storage
+  useEffect(() => {
+    localStorage.setItem(
+      "logsGroupedByTask",
+      JSON.stringify(logsGroupedByTask)
+    );
+  }, [logsGroupedByTask]);
+
+  // Load logsGroupedByTask from local storage on component mount
+
+  useEffect(() => {
+    const storedLogsGroupedByTask = localStorage.getItem("logsGroupedByTask");
+    console.log("Stored logsGroupedByTask:", storedLogsGroupedByTask);
+    const parsedLogsGroupedByTask = JSON.parse(storedLogsGroupedByTask);
+    console.log("Parsed logsGroupedByTask:", parsedLogsGroupedByTask);
+    if (storedLogsGroupedByTask) {
+      setLogsGroupedByTask(JSON.parse(storedLogsGroupedByTask));
+    }
+  }, []);
   const processLogsForRangeAndDuration = (logs) => {
     const startLogs = {};
     const processedLogs = [];
