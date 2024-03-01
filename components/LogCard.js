@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 
-const LogCard = ({ logs, setLogsGroupedByTask, logsGroupedByTask }) => {
+const LogCard = ({
+  logs,
+  logsGroupedByTask,
+  upload,
+  handleUpload,
+  handleLogsGroupedByTask,
+}) => {
   const [active, setActive] = useState(false);
 
   const [processedDurations, setProcessedDurations] = useState([]);
@@ -84,11 +90,11 @@ const LogCard = ({ logs, setLogsGroupedByTask, logsGroupedByTask }) => {
 
   useEffect(() => {
     const storedLogsGroupedByTask = localStorage.getItem("logsGroupedByTask");
-    console.log("Stored logsGroupedByTask:", storedLogsGroupedByTask);
+
     const parsedLogsGroupedByTask = JSON.parse(storedLogsGroupedByTask);
     console.log("Parsed logsGroupedByTask:", parsedLogsGroupedByTask);
     if (storedLogsGroupedByTask) {
-      setLogsGroupedByTask(JSON.parse(storedLogsGroupedByTask));
+      handleLogsGroupedByTask(JSON.parse(storedLogsGroupedByTask));
     }
   }, []);
   const processLogsForRangeAndDuration = (logs) => {
@@ -111,16 +117,62 @@ const LogCard = ({ logs, setLogsGroupedByTask, logsGroupedByTask }) => {
     logs.forEach((log) => {
       const taskDetail = log.action.match(/'(.+?)'/);
       const hasParent = log.parent !== undefined && log.parent !== "";
+
       const taskName = hasParent
         ? `${log.parent}: ${taskDetail[1]}`
         : taskDetail
         ? taskDetail[1]
         : "Unknown Task";
 
+      // Ensure logsGroupedByTask is defined, has the key taskName, and that key maps to an array
+      if (
+        logsGroupedByTask &&
+        logsGroupedByTask[taskName] &&
+        Array.isArray(logsGroupedByTask[taskName])
+      ) {
+        const specificTask = logsGroupedByTask[taskName].find((task) => {
+          const specificTaskName = task.taskName;
+          console.log(`Comparing: '${task}'`);
+          console.log(`Comparing: '${task.taskName}'`);
+          return task.taskName === specificTaskName;
+        });
+
+        console.log({
+          taskExists: !!logsGroupedByTask[taskName],
+          isArray: Array.isArray(logsGroupedByTask[taskName]),
+
+          /*           specificTaskFound: logsGroupedByTask[taskName]?.find(
+            (task) => task.taskName === specificTaskName,
+            logsGroupedByTask
+          ), */
+        });
+
+        if (specificTask) {
+          console.log(specificTask); // This will log the object you're interested in
+        } else {
+          console.log("Specific task not found within the task array.");
+        }
+      } else {
+        console.log(
+          `Task array for '${taskName}' not found or is not an array.`
+        );
+      }
+
       if (log.action.startsWith("Started")) {
+        // Determine if the task is present in logsGroupedByTask and has entries
+        const isTaskLogged =
+          logsGroupedByTask.hasOwnProperty(taskName) &&
+          logsGroupedByTask[taskName].length > 0;
+        console.log("====================================");
+        console.log(logsGroupedByTask.hasOwnProperty(taskName));
+        console.log(taskName);
+        console.log(logsGroupedByTask);
+        // console.log(specificTaskName);
+        console.log("====================================");
         startLogs[taskName] = {
           timestamp: log.timestamp,
           hasParent: hasParent,
+          note: isTaskLogged ? "Present in logsGroupedByTask" : "no", // Adjust this logic based on your actual requirement
         };
       } else if (log.action.startsWith("Stopped") && startLogs[taskName]) {
         const startTimestamp = startLogs[taskName].timestamp;
@@ -130,19 +182,29 @@ const LogCard = ({ logs, setLogsGroupedByTask, logsGroupedByTask }) => {
         );
         const duration = formatDuration(durationInSeconds);
         const dateObject = new Date(startTimestamp);
+
         processedLogs.push({
           taskName,
           range: `${formatTime(startTimestamp)} - ${formatTime(stopTimestamp)}`,
           duration: duration,
-          parent: startLogs[taskName].hasParent, // Add the boolean indicating if there's a parent
+          parent: startLogs[taskName].hasParent,
           date: dateObject.toISOString().split("T")[0],
+          note: startLogs[taskName].note, // Use the note set when the task started
         });
+
         delete startLogs[taskName];
       }
     });
 
     return processedLogs;
   };
+  useEffect(() => {
+    // Assuming processLogsForRangeAndDuration might need to use logsGroupedByTask
+    if (logsGroupedByTask.length > 0) {
+      const processedLogs = processLogsForRangeAndDuration(logs);
+      // Do something with processedLogs, like setting state
+    }
+  }, [logs]); // Rerun when either logs or logsGroupedByTask changes
 
   useEffect(() => {
     const processedLogs = processLogsForRangeAndDuration(logs);
@@ -168,8 +230,7 @@ const LogCard = ({ logs, setLogsGroupedByTask, logsGroupedByTask }) => {
           parents[parentName].push(log);
         }
       });
-
-      setLogsGroupedByTask(parents);
+      handleLogsGroupedByTask(parents);
     }
   }, [logs, sortOption]);
 
@@ -197,17 +258,8 @@ const LogCard = ({ logs, setLogsGroupedByTask, logsGroupedByTask }) => {
 
     const updatedLogGroupedByTask = { ...logsGroupedByTask };
 
-    // Iterate over each task in the object
-    for (const taskName in logsGroupedByTask) {
-      // Iterate over each log in the task's array
-      updatedLogGroupedByTask[taskName].forEach((log) => {
-        // Add or modify the "note" property for each log
-        log.note = ""; // Initialize with an empty string or any default value
-      });
-    }
-
-    // Assuming setLogsGroupedByTask is a state setter function
-    setLogsGroupedByTask(updatedLogGroupedByTask);
+    // Assuming handleLogsGroupedByTask is a state setter function
+    handleLogsGroupedByTask(updatedLogGroupedByTask);
   }, [logs]);
 
   const toggleNote = (index) => {
@@ -225,36 +277,22 @@ const LogCard = ({ logs, setLogsGroupedByTask, logsGroupedByTask }) => {
   };
 
   const addNote = (parentTaskName, logIndex) => {
-    console.log("Parent task name:", parentTaskName);
-    console.log("Log index:", logIndex);
-    console.log("New note:", noteInputs[logIndex]);
-
-    setLogsGroupedByTask((prevLogsGroupedByTask) => {
-      console.log("Previous logs grouped by task:", prevLogsGroupedByTask);
-
+    handleLogsGroupedByTask((prevLogsGroupedByTask) => {
       const updatedLogsGroupedByTask = { ...prevLogsGroupedByTask };
 
       if (updatedLogsGroupedByTask[parentTaskName]) {
-        console.log(
-          "Parent task exists:",
-          updatedLogsGroupedByTask[parentTaskName]
-        );
-
         const updatedTaskLogs = updatedLogsGroupedByTask[parentTaskName].map(
           (log, i) => {
             if (i === logIndex + 1) {
-              console.log(noteInputs);
               return {
                 ...log,
                 note: noteInputs[logIndex],
               };
             }
-            console.log(noteInputs);
+
             return log;
           }
         );
-
-        console.log("Updated task logs:", updatedTaskLogs);
 
         updatedLogsGroupedByTask[parentTaskName] = updatedTaskLogs;
       } else {
@@ -367,17 +405,7 @@ const LogCard = ({ logs, setLogsGroupedByTask, logsGroupedByTask }) => {
                                   {noteStates[logIndex] && (
                                     <div
                                       className="w-full"
-                                      onClick={(e) => [
-                                        console.log(
-                                          String(
-                                            log.taskName.replace(
-                                              parentTaskName + ": ",
-                                              ""
-                                            )
-                                          )
-                                        ),
-                                        e.stopPropagation(),
-                                      ]}
+                                      onClick={(e) => [e.stopPropagation()]}
                                     >
                                       <form
                                         className="w-full flex flex-row align-middle justify-center"

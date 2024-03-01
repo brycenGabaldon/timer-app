@@ -3,7 +3,15 @@ import React, { useEffect, useState } from "react";
 import { FaBeer, FaRegWindowClose } from "react-icons/fa";
 import LogCard from "./LogCard";
 
-const Cards = ({ handleSetLogs, logs, setLogs }) => {
+const Cards = ({
+  handleSetLogs,
+  logs,
+  setLogs,
+  upload,
+  handleUpload,
+  logsGroupedByTask,
+  handleLogsGroupedByTask,
+}) => {
   const [localStorageChange, setLocalStorageChange] = useState(0);
 
   const [download, setDownload] = useState(false);
@@ -97,7 +105,7 @@ const Cards = ({ handleSetLogs, logs, setLogs }) => {
             data.logsGroupedByTask &&
             typeof data.logsGroupedByTask === "string"
           ) {
-            setLogsGroupedByTask(JSON.parse(data.logsGroupedByTask));
+            handleLogsGroupedByTask(JSON.parse(data.logsGroupedByTask));
             console.log("logsGroupedByTask imported successfully.");
           } else {
             console.warn(
@@ -122,57 +130,6 @@ const Cards = ({ handleSetLogs, logs, setLogs }) => {
       console.error("No file selected");
     }
   };
-  const [logsGroupedByTask, setLogsGroupedByTask] = useState({});
-  console.log("====================================");
-  console.log(logsGroupedByTask);
-  console.log("====================================");
-  useEffect(() => {
-    const loadDataFromLocalStorage = () => {
-      const storedTasks = localStorage.getItem("tasks");
-      if (storedTasks) {
-        try {
-          const parsedTasks = JSON.parse(storedTasks);
-          // Ensure parsedTasks is an array before setting it to state
-          if (Array.isArray(parsedTasks)) {
-            setTasks(parsedTasks);
-          } else {
-            console.error("Stored tasks are not in array format");
-            setTasks([]);
-          }
-        } catch (error) {
-          console.error("Error parsing tasks from localStorage:", error);
-          setTasks([]);
-        }
-      } else {
-        // Initialize with default tasks if none are found in localStorage
-        setTasks([]);
-      }
-
-      const storedLogs = localStorage.getItem("logs");
-      if (storedLogs) {
-        try {
-          const parsedLogs = JSON.parse(storedLogs);
-          setLogs(parsedLogs);
-        } catch (error) {
-          console.error("Error parsing logs from localStorage:", error);
-          setLogs([]);
-        }
-      } else {
-        setLogs([]);
-      }
-
-      const storedLogsGroupedByTask = localStorage.getItem("logsGroupedByTask");
-      if (storedLogsGroupedByTask) {
-        const parsedLogsGroupedByTask = JSON.parse(storedLogsGroupedByTask);
-        // Now parsedLogsGroupedByTask will be an object
-        setLogsGroupedByTask(parsedLogsGroupedByTask);
-      } else {
-        setLogsGroupedByTask({});
-      }
-    };
-
-    loadDataFromLocalStorage();
-  }, []);
 
   function exportLocalStorage() {
     // Serialize the data
@@ -427,7 +384,9 @@ const Cards = ({ handleSetLogs, logs, setLogs }) => {
           setLogs={setLogs}
           handleSetLogs={handleSetLogs}
           logsGroupedByTask={logsGroupedByTask}
-          setLogsGroupedByTask={setLogsGroupedByTask}
+          upload={upload}
+          handleUpload={handleUpload}
+          handleLogsGroupedByTask={handleLogsGroupedByTask}
         />
       </div>{" "}
       <div className="add-task-form">
