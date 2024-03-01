@@ -1,6 +1,6 @@
 import Cards from "@/components/Cards";
 import LogCard from "@/components/LogCard";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const Index = () => {
   // Use an object to track the active card and its timer value
@@ -9,6 +9,7 @@ const Index = () => {
     startTime: null,
   });
   const [logs, setLogs] = useState([]);
+
   const handleSetLogs = (newLog) => {
     setLogs((currentLogs) => {
       // Check if the newLog exactly exists
@@ -23,6 +24,7 @@ const Index = () => {
       }
     });
   };
+
   return (
     <div className="place-items-center  place-content-center flex  gap-[100px] w-screen min-h-screen bg-gray-900 overflow-x-hidden p-[2vw]">
       <Cards

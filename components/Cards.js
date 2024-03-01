@@ -139,7 +139,7 @@ const Cards = ({ handleSetLogs, logs }) => {
       data[key] = localStorage.getItem(key);
     }
     const jsonString = JSON.stringify(data);
-    console.log(jsonString);
+
     // Create a blob and trigger a download
     const blob = new Blob([jsonString], { type: "application/json" });
     const a = document.createElement("a");
@@ -179,7 +179,7 @@ const Cards = ({ handleSetLogs, logs }) => {
 
   const [timerStatus, setTimerStatus] = useState({});
 
-  const toggleTimer = (name, id) => {
+  const toggleTimer = (name, id, parentName) => {
     setActiveTimers((prevActiveTimers) => {
       const isTimerActive = !!prevActiveTimers[id];
       let updatedActiveTimers = { ...prevActiveTimers };
@@ -190,6 +190,7 @@ const Cards = ({ handleSetLogs, logs }) => {
         handleSetLogs({
           action: `Stopped timer for '${name}'`,
           timestamp: new Date().toISOString(),
+          parent: `${parentName !== "" ? parentName : ""}`,
         });
       } else {
         updatedActiveTimers[id] = true; // Start the timer
@@ -197,6 +198,7 @@ const Cards = ({ handleSetLogs, logs }) => {
         handleSetLogs({
           action: `Started timer for '${name}'`,
           timestamp: new Date().toISOString(),
+          parent: `${parentName !== "" ? parentName : ""}`,
         });
       }
 
@@ -210,6 +212,7 @@ const Cards = ({ handleSetLogs, logs }) => {
       handleSetLogs({
         action: `${timerStatus.action} timer for task '${timerStatus.id}'`,
         timestamp,
+        parent: `${parentName !== "" ? parentName : ""}`,
       });
     }
   }, [timerStatus]);
@@ -284,7 +287,7 @@ const Cards = ({ handleSetLogs, logs }) => {
                 ? "shadow-green-500/80 bg-green-300/60"
                 : "shadow-black bg-gray-700"
             } text-center p-4 my-4 min-h-[150px] h-full rounded-lg `}
-            onClick={(e) => toggleTimer(task.name, task.id)}
+            onClick={(e) => toggleTimer(task.name, task.id, "")}
           >
             {" "}
             <button
@@ -324,7 +327,7 @@ const Cards = ({ handleSetLogs, logs }) => {
                       onClick={(e) => [
                         e.stopPropagation(),
 
-                        toggleTimer(subtask.name, subtask.id),
+                        toggleTimer(subtask.name, subtask.id, task.name),
                       ]}
                     >
                       {activeTimers[subtask.id] ? "Stop" : "Start"}
@@ -356,7 +359,7 @@ const Cards = ({ handleSetLogs, logs }) => {
             )}
           </div>
         ))}
-        <LogCard logs={logs} />
+        <LogCard logs={logs} handleSetLogs={handleSetLogs} />
       </div>{" "}
       <div className="add-task-form">
         <input
