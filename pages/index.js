@@ -17,19 +17,24 @@ const Index = () => {
   const [tasks, setTasks] = useState([]);
   // Save logs to local storage
   useEffect(() => {
-    localStorage.setItem("logs", JSON.stringify(logs));
-  }, [logs]);
-  // Save logs to local storage
-  useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
-  // Save logs to local storage
-  useEffect(() => {
-    localStorage.setItem(
-      "logsGroupedByTask",
-      JSON.stringify(logsGroupedByTask)
-    );
-  }, [logsGroupedByTask]);
+    // Load logs from local storage
+    const storedLogs = localStorage.getItem("logs");
+    if (storedLogs) {
+      setLogs(JSON.parse(storedLogs));
+    }
+
+    // Load tasks from local storage
+    const storedTasks = localStorage.getItem("tasks");
+    if (storedTasks) {
+      setTasks(JSON.parse(storedTasks));
+    }
+
+    // Load logsGroupedByTask from local storage
+    const storedLogsGroupedByTask = localStorage.getItem("logsGroupedByTask");
+    if (storedLogsGroupedByTask) {
+      setLogsGroupedByTask(JSON.parse(storedLogsGroupedByTask));
+    }
+  }, []); // The empty array ensures this effect runs only once on mount
 
   const handleSetLogs = (newLog) => {
     setLogs((currentLogs) => {
