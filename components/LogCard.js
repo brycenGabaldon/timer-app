@@ -28,10 +28,31 @@ const LogCard = ({ logs }) => {
       for (let i = 0; i < minLength; i++) {
         totalDuration += times.stop[i] - times.start[i];
       }
+      const totalMilliseconds = totalDuration; // Assuming totalDuration is in milliseconds
+
+      // Convert milliseconds to hours, minutes, and seconds
+      const hours = Math.floor(totalMilliseconds / (1000 * 60 * 60));
+      const minutes = Math.floor(
+        (totalMilliseconds % (1000 * 60 * 60)) / (1000 * 60)
+      );
+      const seconds =
+        ((totalMilliseconds % (1000 * 60 * 60)) % (1000 * 60)) / 1000;
+
+      let combinedDuration = "";
+
+      if (hours > 0) {
+        combinedDuration += `${hours}h `;
+      }
+
+      if (minutes > 0 || hours > 0) {
+        combinedDuration += `${minutes}m `;
+      }
+
+      combinedDuration += `${seconds.toFixed(0)}s`;
 
       return {
         task: taskName,
-        combinedDuration: `${(totalDuration / 1000).toFixed(2)}s`,
+        combinedDuration: combinedDuration,
       };
     });
 
@@ -172,7 +193,7 @@ const LogCard = ({ logs }) => {
                             >
                               <div>
                                 {log.range}{" "}
-                                <span className="text-zinc-900 float-right">
+                                <span className="text-white float-right">
                                   {log.duration}
                                 </span>
                               </div>
