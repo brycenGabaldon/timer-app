@@ -16,22 +16,91 @@ const LogCard = ({
   }, [logs]);
   const processAndSumDurations = (logs) => {
     const tasks = {};
-
+    const startLogs = {};
+    const processedLogs = []; // Assuming this is defined outside the forEach to collect processed log entries
+    let note = "";
     logs.forEach((log) => {
-      const match = log.action.match(/'([^']+)'/);
-      const taskName = match ? match[1] : "Unknown";
-      const timestamp = new Date(log.timestamp).getTime();
-
-      if (!tasks[taskName]) {
-        tasks[taskName] = { start: [], stop: [] };
-      }
+      const taskDetail = log.action.match(/'(.+?)'/);
+      const hasParent = log.parent !== undefined && log.parent !== "";
+      const parentTaskName = hasParent
+        ? log.parent
+        : taskDetail
+        ? taskDetail[1]
+        : "Unknown Task";
+      const taskName = hasParent
+        ? `${log.parent}: ${taskDetail[1]}`
+        : parentTaskName;
 
       if (log.action.startsWith("Started")) {
-        tasks[taskName].start.push(timestamp);
-      } else if (log.action.startsWith("Stopped")) {
-        tasks[taskName].stop.push(timestamp);
+        // Logic for handling "Started" action
+        // Here you set up the initial log entry in startLogs, without setting the note here
+        startLogs[taskName] = {
+          timestamp: log.timestamp,
+          hasParent: hasParent,
+          // Do not set the note here since it's managed in logsGroupedByTask
+        };
+      } else if (log.action.startsWith("Stopped") && startLogs[taskName]) {
+        // Logic for handling "Stopped" action
+        const startTimestamp = startLogs[taskName].timestamp;
+        const stopTimestamp = log.timestamp;
+        const durationInSeconds = Math.round(
+          (new Date(stopTimestamp) - new Date(startTimestamp)) / 1000
+        );
+        const duration = formatDuration(durationInSeconds);
+        const dateObject = new Date(startTimestamp);
+
+        let note = "";
+
+        // Check for the existence of the task in logsGroupedByTask to find an existing note
+        if (
+          logsGroupedByTask[parentTaskName] &&
+          Array.isArray(logsGroupedByTask[parentTaskName])
+        ) {
+          const specificTask = logsGroupedByTask[parentTaskName].find(
+            (task) => task.taskName === taskName
+          );
+
+          if (specificTask && specificTask.note) {
+            note = specificTask.note; // Use the existing note if found
+          }
+        }
+
+        // Push the processed log entry into processedLogs, including any found note
+        processedLogs.push({
+          taskName,
+          range: `${formatTime(startTimestamp)} - ${formatTime(stopTimestamp)}`,
+          duration: duration,
+          parent: startLogs[taskName].hasParent,
+          date: dateObject.toISOString().split("T")[0],
+          note: note, // Apply the note from logsGroupedByTask if it existed
+        });
+
+        delete startLogs[taskName]; // Clean up startLogs entry after processing
       }
+
+      // Additional logic for other actions or conditions can be added here
     });
+
+    // Utility function to format duration into a human-readable string
+    function formatDuration(durationInSeconds) {
+      const hours = Math.floor(durationInSeconds / 3600);
+      const minutes = Math.floor((durationInSeconds % 3600) / 60);
+      const seconds = durationInSeconds % 60;
+
+      return [hours, minutes, seconds]
+        .map((unit) => (unit < 10 ? `0${unit}` : unit.toString())) // Zero padding for single-digit hours/minutes/seconds
+        .join(":"); // Joining with colon as separator
+    }
+
+    // Utility function to format timestamps into a readable range
+    function formatTime(timestamp) {
+      return new Date(timestamp).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false, // Change to true for AM/PM format
+      });
+    }
 
     const result = Object.entries(tasks).map(([taskName, times]) => {
       let totalDuration = 0;
@@ -89,6 +158,28 @@ const LogCard = ({
   // Load logsGroupedByTask from local storage on component mount
 
   useEffect(() => {
+    function filterChildTasks(logsGroupedByTask) {
+      // Object to hold the filtered tasks, preserving the structure
+      const filteredTasks = {};
+
+      // Iterate over each key in the logsGroupedByTask object
+      Object.keys(logsGroupedByTask).forEach((parentTaskName) => {
+        // Filter out tasks that are considered "child" tasks based on naming convention
+        const childTasks = logsGroupedByTask[parentTaskName].filter((task) =>
+          task.taskName.includes(":")
+        );
+
+        // Assign the filtered array back to the corresponding key
+        filteredTasks[parentTaskName] = childTasks;
+      });
+
+      return filteredTasks;
+    }
+
+    // Usage
+    const childTasksOnly = filterChildTasks(logsGroupedByTask);
+    console.log(childTasksOnly);
+
     const storedLogsGroupedByTask = localStorage.getItem("logsGroupedByTask");
 
     const parsedLogsGroupedByTask = JSON.parse(storedLogsGroupedByTask);
@@ -117,45 +208,44 @@ const LogCard = ({
     logs.forEach((log) => {
       const taskDetail = log.action.match(/'(.+?)'/);
       const hasParent = log.parent !== undefined && log.parent !== "";
-
-      const taskName = hasParent
-        ? `${log.parent}: ${taskDetail[1]}`
+      const parentTaskName = hasParent
+        ? log.parent
         : taskDetail
         ? taskDetail[1]
         : "Unknown Task";
+      const taskName = hasParent
+        ? `${log.parent}: ${taskDetail[1]}`
+        : parentTaskName;
+      let note = "";
 
-      // Ensure logsGroupedByTask is defined, has the key taskName, and that key maps to an array
+      // Check for the existence of the task in logsGroupedByTask to find an existing note
       if (
-        logsGroupedByTask &&
-        logsGroupedByTask[taskName] &&
-        Array.isArray(logsGroupedByTask[taskName])
+        logsGroupedByTask[parentTaskName] &&
+        Array.isArray(logsGroupedByTask[parentTaskName])
       ) {
-        const specificTask = logsGroupedByTask[taskName].find((task) => {
-          const specificTaskName = task.taskName;
-          console.log(`Comparing: '${task}'`);
-          console.log(`Comparing: '${task.taskName}'`);
-          return task.taskName === specificTaskName;
-        });
-
-        console.log({
-          taskExists: !!logsGroupedByTask[taskName],
-          isArray: Array.isArray(logsGroupedByTask[taskName]),
-
-          /*           specificTaskFound: logsGroupedByTask[taskName]?.find(
-            (task) => task.taskName === specificTaskName,
-            logsGroupedByTask
-          ), */
-        });
-
-        if (specificTask) {
-          console.log(specificTask); // This will log the object you're interested in
-        } else {
-          console.log("Specific task not found within the task array.");
-        }
-      } else {
-        console.log(
-          `Task array for '${taskName}' not found or is not an array.`
+        const specificTask = logsGroupedByTask[parentTaskName].find(
+          (task) => task.taskName === taskName
         );
+
+        if (specificTask && specificTask.note) {
+          note = specificTask.note; // Use the existing note if found
+        }
+      }
+
+      let isTaskLogged = false;
+      if (
+        logsGroupedByTask[parentTaskName] &&
+        Array.isArray(logsGroupedByTask[parentTaskName])
+      ) {
+        // If it's a child task, check within the parent task's array
+        isTaskLogged = logsGroupedByTask[parentTaskName].some(
+          (task) => task.taskName === taskName
+        );
+      } else if (!hasParent && logsGroupedByTask[taskName]) {
+        // If it's a parent task, check directly
+        isTaskLogged =
+          Array.isArray(logsGroupedByTask[taskName]) &&
+          logsGroupedByTask[taskName].length > 0;
       }
 
       if (log.action.startsWith("Started")) {
@@ -165,14 +255,18 @@ const LogCard = ({
           logsGroupedByTask[taskName].length > 0;
         console.log("====================================");
         console.log(logsGroupedByTask.hasOwnProperty(taskName));
+        console.log("^ is child");
         console.log(taskName);
+        console.log("^ is child of");
         console.log(logsGroupedByTask);
         // console.log(specificTaskName);
         console.log("====================================");
+        console.log(isTaskLogged);
+        console.log("^ is task logged");
         startLogs[taskName] = {
           timestamp: log.timestamp,
           hasParent: hasParent,
-          note: isTaskLogged ? "Present in logsGroupedByTask" : "no", // Adjust this logic based on your actual requirement
+          note: note, // Adjust this logic based on your actual requirement
         };
       } else if (log.action.startsWith("Stopped") && startLogs[taskName]) {
         const startTimestamp = startLogs[taskName].timestamp;
@@ -189,22 +283,15 @@ const LogCard = ({
           duration: duration,
           parent: startLogs[taskName].hasParent,
           date: dateObject.toISOString().split("T")[0],
-          note: startLogs[taskName].note, // Use the note set when the task started
+          note: note,
         });
 
         delete startLogs[taskName];
       }
     });
-
+    console.log(processedLogs);
     return processedLogs;
   };
-  useEffect(() => {
-    // Assuming processLogsForRangeAndDuration might need to use logsGroupedByTask
-    if (logsGroupedByTask.length > 0) {
-      const processedLogs = processLogsForRangeAndDuration(logs);
-      // Do something with processedLogs, like setting state
-    }
-  }, [logs]); // Rerun when either logs or logsGroupedByTask changes
 
   useEffect(() => {
     const processedLogs = processLogsForRangeAndDuration(logs);
@@ -347,7 +434,7 @@ const LogCard = ({
                   </span>
                 </>
               )}
-              {sortOption === "time"
+              {sortOption === "time" && logsSortedByTime
                 ? logsSortedByTime.map((log, index) => (
                     <div
                       key={index}
